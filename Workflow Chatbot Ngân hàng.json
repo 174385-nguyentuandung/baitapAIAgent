@@ -1,0 +1,181 @@
+{
+  "name": "Workflow Chatbot Ngân hàng",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "89996ec5-094b-485a-9bce-3030377f004f",
+      "name": "When chat message received",
+      "webhookId": "9e81be9f-f7eb-4219-b5d3-e816a7633f83"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Bạn là Trợ lý tra cứu tài liệu Ban Kế hoạch.\n\nQUY TẮC BẮT BUỘC:\n1. Với mọi câu hỏi về tài liệu, nội dung, số liệu, chỉ đạo, quy định hoặc tên tài liệu, trước tiên PHẢI gọi tool planning_document_search bằng toàn bộ câu hỏi của người dùng.\n2. Chỉ trả lời từ pageContent và metadata do tool trả về; không sử dụng kiến thức bên ngoài.\n3. Nếu không tìm thấy căn cứ phù hợp, trả lời: \"Tài liệu được cung cấp không đề cập đến nội dung này.\"\n4. Cuối câu trả lời phải ghi nguồn theo mẫu:\n   Nguồn: <metadata.file_name> - <Điều/Mục/đoạn nếu xác định được>.\n5. Không hiển thị API key, email cá nhân, file ID nội bộ hoặc metadata kỹ thuật không cần thiết.\n6. Trả lời bằng tiếng Việt, ngắn gọn, rõ ràng.",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "d7297ab7-e6cd-40ca-af65-318d1ac14c44",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "a2f37d50-c796-46e1-88ce-42c4bb25512a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "vlLN6xhPrabyIbvE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        224,
+        208
+      ],
+      "id": "9fb5afdd-5b30-46ce-b989-531b7538f745",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Tra cứu tài liệu Ban Kế hoạch; bắt buộc dùng cho câu hỏi về nội dung, số liệu, quy định, chỉ đạo và tên tài liệu.",
+        "memoryKey": {
+          "__rl": true,
+          "value": "planning_chatbot",
+          "mode": "list",
+          "cachedResultName": "planning_chatbot"
+        },
+        "topK": 8
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "typeVersion": 1.3,
+      "position": [
+        560,
+        16
+      ],
+      "id": "8ab95377-aa58-4d04-8ea0-4a6b3d5b14b2",
+      "name": "Simple Vector Store"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-embedding-2"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        656,
+        224
+      ],
+      "id": "bacc9961-1260-4f3e-ba3b-bb2fd1b7d70a",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "vlLN6xhPrabyIbvE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Simple Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "5899119f-0b60-4e1d-8b41-9f2651cc5add",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c40cd83393826cb4b70f436de681e8b5e2ece9014b36ca6f3072f472fe91e6e2"
+  },
+  "nodeGroups": [],
+  "id": "99gqqNEggaHtgBIU",
+  "tags": []
+}
